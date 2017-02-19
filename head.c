@@ -1,0 +1,39 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+static void do_head(FILE *f, long nlines);
+
+int main(int argc, char *argv[]) {
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s n [file file...]\n", argv[0]);
+    exit(1);
+  } else if (argc == 2) {
+    do_head(stdin, atol(argv[1]));
+  } else {
+    int i;
+    for (i = 2; i < argc; i++) {
+      FILE *f = fopen(argv[i], "r");
+      if (!f) {
+        perror(argv[i]);
+        exit(1);
+      }
+      do_head(f, atol(argv[1]));
+      fclose(f);
+    }
+  }
+
+  exit(0);
+}
+
+static void
+do_head(FILE *f, long nlines) {
+  int c;
+
+  if (nlines <= 0) return;
+  while ((c = fgetc(f)) != EOF) {
+    if (putchar(c) < 0) exit(1);
+    if (c == '\n') {
+      if ((--nlines) == 0) return;
+    }
+  }
+}
