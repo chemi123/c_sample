@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
+#include <getopt.h>
 #include <regex.h>
 
-static void do_grep(regex_t *pat, FILE *f);
+static void do_grep(regex_t *pat, FILE *f, int ignore_case);
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -12,9 +11,41 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  int has_option = 0;
+  int reg_icase = 0;
+  int ignore_case = 0;
+  int opt;
+  while ((opt = getopt(argc, argv, "iv")) != -1) {
+    switch (opt) {
+      case 'i':
+        reg_icase = 1;
+        has_option = 1;
+        break;
+      case 'v':
+        has_option = 1;
+        ignore_case = 1;
+        break;
+      case '?':
+      default:
+        fprintf(stderr, "Not valid option\n");
+        exit(1);
+        break;
+    }
+  }
+
   regex_t pat;
   int i;
-  int err = regcomp(&pat, argv[1], REG_EXTENDED | REG_NOSUB | REG_NEWLINE);
+  int err;
+  if (reg_icase) {
+    err = regcomp(&pat, argv[2], REG_EXTENDED | REG_NOSUB | REG_NEWLINE | REG_ICASE);
+  } else {
+    if (has_option) {
+      err = regcomp(&pat, argv[2], REG_EXTENDED | REG_NOSUB | REG_NEWLINE);
+    } else {
+      err = regcomp(&pat, argv[1], REG_EXTENDED | REG_NOSUB | REG_NEWLINE);
+    }
+  }
+
   if (err != 0) {
     char buf[1024];
     regerror(err, &pat, buf, sizeof buf);
@@ -22,11 +53,29 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  if (argc == 2) {
-    do_grep(&pat, stdin);
+  int has_file = 0;
+  if (has_option) {
+    if (argc > 3) {
+      has_file = 1;
+    }
+  } else {
+    if (argc > 2) {
+      has_file = 1;
+    }
+  }
+
+  if (!has_file) {
+    do_grep(&pat, stdin, ignore_case);
   } else {
     int i;
-    for (i = 2; i < argc; i++) {
+    int file_pos;
+    if (has_option) {
+      file_pos = 3;
+    } else {
+      file_pos = 2;
+    }
+
+    for (i = file_pos; i < argc; i++) {
       FILE *src = fopen(argv[i], "r");
 
       if (!src){
@@ -34,7 +83,7 @@ int main(int argc, char *argv[]) {
 	exit(1);
       }
 
-      do_grep(&pat, src);
+      do_grep(&pat, src, ignore_case);
       fclose(src);
     }
   }
@@ -43,12 +92,19 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
+// あんまり書き方が綺麗じゃない
 static void
-do_grep(regex_t *pat, FILE *src) {
+do_grep(regex_t *pat, FILE *src, int ignore_case) {
   char buf[4096];
   while (fgets(buf, sizeof buf, src) != NULL) {
-    if (regexec(pat, buf, 0, NULL, 0) == 0) {
-      fputs(buf, stdout);
+    if (ignore_case) {
+      if (regexec(pat, buf, 0, NULL, 0)) {
+        fputs(buf, stdout);
+      }
+    } else {
+      if (regexec(pat, buf, 0, NULL, 0) == 0) {
+        fputs(buf, stdout);
+      }
     }
   }
 }
