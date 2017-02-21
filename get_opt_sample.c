@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <getopt.h>
 
+// 自分の理解用
+
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     fputs("no pattern\n", stderr);
