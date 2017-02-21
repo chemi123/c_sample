@@ -3,7 +3,10 @@
 #include <getopt.h>
 #include <regex.h>
 
-static void do_grep(regex_t *pat, FILE *f, int ignore_case);
+static void do_grep(regex_t *pat, FILE *f);
+
+static int opt_icase = 0;
+static int opt_invert = 0;
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -11,19 +14,20 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  regex_t pat;
+  int i;
+  int err;
   int has_option = 0;
-  int reg_icase = 0;
-  int ignore_case = 0;
   int opt;
+  int mode;
   while ((opt = getopt(argc, argv, "iv")) != -1) {
+    has_option = 1;
     switch (opt) {
       case 'i':
-        reg_icase = 1;
-        has_option = 1;
+        opt_icase = 1;
         break;
       case 'v':
-        has_option = 1;
-        ignore_case = 1;
+        opt_invert = 1;
         break;
       case '?':
       default:
@@ -33,17 +37,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  regex_t pat;
-  int i;
-  int err;
-  if (reg_icase) {
-    err = regcomp(&pat, argv[2], REG_EXTENDED | REG_NOSUB | REG_NEWLINE | REG_ICASE);
+  mode = REG_EXTENDED | REG_NOSUB | REG_NEWLINE;
+  if (opt_icase) mode |= REG_ICASE;
+  if (has_option) {
+    err = regcomp(&pat, argv[2], mode);
   } else {
-    if (has_option) {
-      err = regcomp(&pat, argv[2], REG_EXTENDED | REG_NOSUB | REG_NEWLINE);
-    } else {
-      err = regcomp(&pat, argv[1], REG_EXTENDED | REG_NOSUB | REG_NEWLINE);
-    }
+    err = regcomp(&pat, argv[1], mode);
   }
 
   if (err != 0) {
@@ -65,7 +64,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (!is_pipe) {
-    do_grep(&pat, stdin, ignore_case);
+    do_grep(&pat, stdin);
   } else {
     int i;
     int file_pos;
@@ -83,7 +82,7 @@ int main(int argc, char *argv[]) {
 	exit(1);
       }
 
-      do_grep(&pat, src, ignore_case);
+      do_grep(&pat, src);
       fclose(src);
     }
   }
@@ -94,10 +93,10 @@ int main(int argc, char *argv[]) {
 
 // あんまり書き方が綺麗じゃない
 static void
-do_grep(regex_t *pat, FILE *src, int ignore_case) {
+do_grep(regex_t *pat, FILE *src) {
   char buf[4096];
   while (fgets(buf, sizeof buf, src) != NULL) {
-    if (ignore_case) {
+    if (opt_invert) {
       if (regexec(pat, buf, 0, NULL, 0)) {
         fputs(buf, stdout);
       }
