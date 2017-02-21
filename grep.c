@@ -91,19 +91,19 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-// あんまり書き方が綺麗じゃない
 static void
 do_grep(regex_t *pat, FILE *src) {
   char buf[4096];
+  int matched;
+
   while (fgets(buf, sizeof buf, src) != NULL) {
+    matched = (regexec(pat, buf, 0, NULL, 0) == 0);
     if (opt_invert) {
-      if (regexec(pat, buf, 0, NULL, 0)) {
-        fputs(buf, stdout);
-      }
-    } else {
-      if (regexec(pat, buf, 0, NULL, 0) == 0) {
-        fputs(buf, stdout);
-      }
+      matched = !matched;
+    }
+
+    if (matched) {
+      fputs(buf, stdout);
     }
   }
 }
