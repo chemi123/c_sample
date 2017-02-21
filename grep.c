@@ -53,18 +53,18 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  int has_file = 0;
+  int is_pipe = 0;
   if (has_option) {
     if (argc > 3) {
-      has_file = 1;
+      is_pipe = 1;
     }
   } else {
     if (argc > 2) {
-      has_file = 1;
+      is_pipe = 1;
     }
   }
 
-  if (!has_file) {
+  if (!is_pipe) {
     do_grep(&pat, stdin, ignore_case);
   } else {
     int i;
