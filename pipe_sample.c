@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
+// 子プロセスから親プロセスに出力する
+
 int main() {
   int fds[2];
   pid_t pid;
@@ -19,8 +21,10 @@ int main() {
   }
 
   if (pid == 0) {
+    // 子プロセスの読み込み側は不要なので閉じる
     close(fds[0]);
 
+    // (i) ここで書き込み側のfdにメッセージを書き込む->(ii)で読み込む
     if (write(fds[1], "This is a message from child process", 40) < 0) {
       perror("write()");
       exit(1);
@@ -29,9 +33,10 @@ int main() {
     close(fds[1]);
   } else {
     char buf[1024];
+    // 親プロセスの書き込み側は不要なので閉じる
     close(fds[1]);
-    sleep(1);
 
+    // (ii) ここで(i)で書き込まれたメッセージを読み込み側のfdから読む
     if (read(fds[0], buf, sizeof(buf)) < 0) {
       perror("read()");
       exit(1);
