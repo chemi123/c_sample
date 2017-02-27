@@ -12,7 +12,11 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  pid = fork();
+  if ((pid = fork()) < 0) {
+    perror("fork()");
+    exit(1);
+  }
+
   if (pid == 0) {
     execl(argv[1], argv[1], argv[2], NULL);
     // execを実行しているので戻ってきたら異常系
