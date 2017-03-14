@@ -1,1 +1,1 @@
-# Programming linux commands just for learn
+# Programming linux just for learn
