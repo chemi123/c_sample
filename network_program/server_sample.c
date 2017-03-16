@@ -20,7 +20,8 @@ int main() {
   }
 
   server_address.sin_family= AF_INET;
-  server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
+  //server_address.sin_addr.s_addr = inet_addr("127.0.0.1"); // ループバックアドレス 
+  server_address.sin_addr.s_addr = INADDR_ANY; // このサーバが持つIPなんでも
   server_address.sin_port = 9734;
   server_len = sizeof(server_address);
   if (bind(server_socket_fd, (struct sockaddr *)&server_address, server_len) < 0) {
@@ -33,14 +34,18 @@ int main() {
     exit(1);
   }
 
+  printf("server waiting\n");
   while (1) {
-    printf("server waiting\n");
 
     client_socket_fd = accept(server_socket_fd, (struct sockaddr *)&server_address, &client_len);
     if (client_socket_fd < 0) {
       perror("accept: ");
       break;
     }
+
+    // アクセス元のログ表示
+    printf("accepted connection from %s, port=%d\n",
+              inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
 
     if (write(client_socket_fd, "abcde", 5) < 0) {
       perror("write: ");
