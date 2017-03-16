@@ -10,6 +10,8 @@ int main() {
   pid_t pid;
   int status;
 
+  // fd[0]: 読み込み専用
+  // fd[1]: 書きみ込み専用
   if (pipe(fds) < 0) {
     perror("pipe()");
     exit(1);
